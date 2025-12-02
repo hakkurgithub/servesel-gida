@@ -1,25 +1,26 @@
+// prisma/schema.prisma
+
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated"
-}
-datasource db {
-  provider = "postgresql"
+  provider = "prisma-client-js"
 }
 
+datasource db {
+  provider  = "postgresql"
+}
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  password     String
-  role         Role
-  company      String
-  taxNo        String
-  address      String
-  phone        String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  products     Product[] @relation("SellerProducts")
-  orders       Order[]   @relation("BuyerOrders")
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role
+  company   String
+  taxNo     String
+  address   String
+  phone     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products  Product[] @relation("SellerProducts")
+  orders    Order[]   @relation("BuyerOrders")
 }
 
 enum Role {
@@ -29,36 +30,36 @@ enum Role {
 }
 
 model Category {
-  id    Int    @id @default(autoincrement())
-  name  String
-  slug  String   @unique
+  id       Int       @id @default(autoincrement())
+  name     String
+  slug     String    @unique
   products Product[]
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
-  slug        String   @unique
+  slug        String      @unique
   description String
   price       Float
   stock       Int
   image       String
   categoryId  Int
   sellerId    Int
-  public      Boolean  @default(true)
-  category    Category @relation(fields: [categoryId], references: [id])
-  seller      User     @relation("SellerProducts", fields: [sellerId], references: [id])
+  public      Boolean     @default(true)
+  category    Category    @relation(fields: [categoryId], references: [id])
+  seller      User        @relation("SellerProducts", fields: [sellerId], references: [id])
   orderItems  OrderItem[]
 }
 
 model Order {
-  id          Int      @id @default(autoincrement())
-  orderNumber String   @unique
+  id          Int         @id @default(autoincrement())
+  orderNumber String      @unique
   buyerId     Int
   status      OrderStatus
   total       Float
-  createdAt   DateTime @default(now())
-  buyer       User     @relation("BuyerOrders", fields: [buyerId], references: [id])
+  createdAt   DateTime    @default(now())
+  buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id])
   items       OrderItem[]
 }
 
