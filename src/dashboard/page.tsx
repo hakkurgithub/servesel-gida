@@ -3,29 +3,42 @@ import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
-  // Oturumu kontrol et
+  // Oturumu kontrol et (Sunucu tarafında)
   const session = await getServerSession(authOptions);
 
-  // Eğer giriş yapılmamışsa, giriş sayfasına at
+  // Eğer giriş yapılmamışsa, giriş sayfasına geri gönder
   if (!session) {
     redirect("/api/auth/signin");
   }
 
   return (
-    <div style={{ padding: "50px", fontFamily: "sans-serif" }}>
-      <h1 style={{ color: "green" }}>✅ Giriş Başarılı!</h1>
-      <h2>Admin Paneline Hoş Geldiniz</h2>
-      
-      <div style={{ border: "1px solid #ccc", padding: "20px", marginTop: "20px", borderRadius: "8px" }}>
-        <p><strong>Kullanıcı:</strong> {session.user?.email}</p>
-        <p><strong>Rol:</strong> {session.user?.role || "Tanımsız"}</p>
-        <p><strong>Şirket:</strong> {session.user?.company || "Tanımsız"}</p>
-      </div>
+    <div className="min-h-screen bg-gray-100 p-10 font-sans">
+      <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-8">
+        
+        <h1 className="text-3xl font-bold text-green-600 mb-6">
+          ✅ Giriş Başarılı!
+        </h1>
+        
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          Admin Paneline Hoş Geldiniz
+        </h2>
+        
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+          <p className="text-gray-700"><strong>Email:</strong> {session.user?.email}</p>
+          <p className="text-gray-700"><strong>Rol:</strong> {session.user?.role || "Tanımsız"}</p>
+          <p className="text-gray-700"><strong>Şirket:</strong> {session.user?.company || "Tanımsız"}</p>
+        </div>
 
-      <br />
-      <a href="/api/auth/signout" style={{ color: "red", textDecoration: "none", fontWeight: "bold" }}>
-        Çıkış Yap
-      </a>
+        <div className="mt-8">
+            <a 
+              href="/api/auth/signout" 
+              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-colors"
+            >
+              Çıkış Yap
+            </a>
+        </div>
+
+      </div>
     </div>
   );
 }
