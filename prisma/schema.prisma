@@ -2,26 +2,28 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// İŞTE EKSİK OLAN KISIM BURASI:
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
+// --- MODELLER ---
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
   password  String
-  role      Role
-  company   String
-  taxNo     String
-  address   String
-  phone     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      Role      @default(BUYER)
+  company   String?
+  taxNo     String?
+  address   String?
+  phone     String?
+  isApproved Boolean  @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   products  Product[] @relation("SellerProducts")
-  orders    Order[]   @relation("BuyerOrders")
+  orders    Order[]   // İlişki adı kaldırıldı, basitleştirildi
 }
 
 enum Role {
@@ -38,46 +40,33 @@ model Category {
 }
 
 model Product {
-  id          Int         @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
-  slug        String      @unique
-  description String
+  slug        String   @unique
+  description String?
   price       Float
   stock       Int
-  image       String
+  image       String?
   categoryId  Int
   sellerId    Int
-  public      Boolean     @default(true)
-  category    Category    @relation(fields: [categoryId], references: [id])
-  seller      User        @relation("SellerProducts", fields: [sellerId], references: [id])
-  orderItems  OrderItem[]
+  public      Boolean  @default(true)
+  category    Category @relation(fields: [categoryId], references: [id])
+  seller      User     @relation("SellerProducts", fields: [sellerId], references: [id])
 }
 
+// Tek ve Doğru Sipariş Modeli
 model Order {
-  id          Int         @id @default(autoincrement())
-  orderNumber String      @unique
-  buyerId     Int
-  status      OrderStatus
-  total       Float
-  createdAt   DateTime    @default(now())
-  buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id])
-  items       OrderItem[]
-}
+  id        Int      @id @default(autoincrement())
+  
+  // İlişki Ayarları (User ID INT olduğu için burası da Int olmalı)
+  userId    Int      
+  user      User     @relation(fields: [userId], references: [id])
+  
+  items     Json     // Sepet ürünleri burada saklanacak
+  total     Float
+  status    String   @default("Hazırlanıyor")
+  createdAt DateTime @default(now())
 
-enum OrderStatus {
-  PENDING
-  APPROVED
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
-
-model OrderItem {
-  id        Int     @id @default(autoincrement())
-  orderId   Int
-  productId Int
-  quantity  Int
-  unitPrice Float
-  order     Order   @relation(fields: [orderId], references: [id])
-  product   Product @relation(fields: [productId], references: [id])
+  // Supabase'in "public.siparisler" hatasını çözen satır:
+  @@map("siparisler")
 }

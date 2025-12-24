@@ -1,22 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Bu ayar bcrypt hatalarını engeller (Kalkanımız):
-  serverExternalPackages: ['bcrypt-ts', 'bcryptjs'],
-
-  // Resim yükleme izinleri:
+  // output: 'export',  <-- BU SATIRI SİLİN VEYA BAŞINA // KOYARAK KAPATIN
+  reactStrictMode: true,
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '*.public.blob.vercel-storage.com',
-      },
-    ],
+    unoptimized: true,
   },
-  
-  // TypeScript hatalarını yoksay:
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-};
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig

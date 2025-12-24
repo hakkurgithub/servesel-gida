@@ -1,0 +1,5 @@
+<IfModule mod_mime.c>
+  AddType application/javascript .js
+  AddType application/wasm .wasm
+  AddType text/css .css
+</IfModule>
