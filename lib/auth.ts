@@ -1,7 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { prisma } from "@/lib/prisma"; // Prisma dosyanın yolu (lib/prisma.ts veya db.ts)
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
@@ -41,13 +41,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Hatalı şifre");
         }
 
-        // DÜZELTME: ID'yi string'e çevirerek yeni bir obje döndürüyoruz
         return {
-          id: user.id.toString(), // Number -> String dönüşümü
+          id: user.id.toString(),
           email: user.email,
           role: user.role,
-          name: user.company || "", // Varsa şirket adını isim olarak alalım
-          // İhtiyaç duyulan diğer alanları buraya ekleyebilirsin
+          name: user.company || "",
         };
       },
     }),
@@ -55,7 +53,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id = user.id;
+        // DÜZELTME BURADA YAPILDI:
+        // Eskisi: session.user.id = token.id = user.id; (Hatalıydı)
+        // Yenisi: Sadece token'dan alıyoruz.
+        session.user.id = token.id as string;
         session.user.role = token.role as string;
       }
       return session;
