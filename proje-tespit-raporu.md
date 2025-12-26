@@ -302,13 +302,13 @@ import { authOptions, prisma } from "@/lib/auth";
 ### `route.ts`
 ```
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 ```
 ### `route.ts`
 ```
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 let category = await prisma.category.findFirst({ where: { sl...
 ```
 ### `route.ts`
