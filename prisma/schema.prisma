@@ -8,10 +8,9 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// --- MODELLER ---
-
+// --- KULLANICI MODELİ ---
 model User {
-  id        Int       @id @default(autoincrement())
+  id        String    @id @default(cuid()) // NextAuth uyumu için String yapıldı
   email     String    @unique
   password  String
   role      Role      @default(BUYER)
@@ -22,8 +21,9 @@ model User {
   isApproved Boolean  @default(false)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  products  Product[] @relation("SellerProducts")
-  orders    Order[]   // İlişki adı kaldırıldı, basitleştirildi
+  
+  // İlişkiler
+  orders    Order[]
 }
 
 enum Role {
@@ -32,41 +32,56 @@ enum Role {
   ADMIN
 }
 
+// --- KATEGORİ MODELİ ---
 model Category {
   id       Int       @id @default(autoincrement())
   name     String
   slug     String    @unique
-  products Product[]
 }
 
+// --- ÜRÜN MODELİ ---
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(cuid())
   name        String
-  slug        String   @unique
   description String?
   price       Float
-  stock       Int
   image       String?
-  categoryId  Int
-  sellerId    Int
-  public      Boolean  @default(true)
-  category    Category @relation(fields: [categoryId], references: [id])
-  seller      User     @relation("SellerProducts", fields: [sellerId], references: [id])
+  category    String?
+  stock       Int      @default(0)
+  
+  // Yeni Eklenen Alanlar
+  link        String?  // Ürün/Tedarikçi Linki
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // İlişkiler
+  OrderItems   OrderItem[]
 }
 
-// Tek ve Doğru Sipariş Modeli
+// --- SİPARİŞ MODELİ ---
 model Order {
-  id        Int      @id @default(autoincrement())
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
   
-  // İlişki Ayarları (User ID INT olduğu için burası da Int olmalı)
-  userId    Int      
-  user      User     @relation(fields: [userId], references: [id])
-  
-  items     Json     // Sepet ürünleri burada saklanacak
+  items     OrderItem[] // JSON yerine gerçek tablo ilişkisi
   total     Float
-  status    String   @default("Hazırlanıyor")
-  createdAt DateTime @default(now())
+  status    String      @default("Hazırlanıyor") // Bekliyor, Hazırlanıyor, Tamamlandı
+  createdAt DateTime    @default(now())
+}
 
-  // Supabase'in "public.siparisler" hatasını çözen satır:
-  @@map("siparisler")
+// --- SİPARİŞ DETAYI (ARA TABLO) ---
+model OrderItem {
+  id        String  @id @default(cuid())
+  
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  
+  quantity  Int
+  price     Float   // O anki satış fiyatı
 }

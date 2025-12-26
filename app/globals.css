@@ -2,17 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Buradan aşağısı senin özel stillerin olabilir */
-body {
-  background-color: #f9fafb; /* Açık gri arka plan */
-}
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 248, 250, 252; /* slate-50 rengi */
+  --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
 }
