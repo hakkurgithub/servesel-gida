@@ -1,138 +1,216 @@
 "use client";
-
-import Link from "next/link";
-import { useState } from "react";
-
-// Başlangıç Verileri
-const initialProducts = [
-  { id: 1, name: "Tam Yağlı Beyaz Peynir (Teneke)", price: 1250.00, stock: 45, category: "Süt Ürünleri" },
-  { id: 2, name: "Siyah Zeytin (Gemlik) - 10kg", price: 890.00, stock: 20, category: "Zeytin" },
-  { id: 3, name: "Tereyağı (Tuzsuz) - 1kg", price: 340.50, stock: 15, category: "Süt Ürünleri" },
-  { id: 4, name: "Kaşar Peyniri (Taze) - 2kg", price: 680.00, stock: 32, category: "Süt Ürünleri" },
-  { id: 5, name: "Domates Salçası - 5kg", price: 450.00, stock: 100, category: "Konserve" },
-];
+import { useState, useEffect } from "react";
+import { Package, Search, Edit, Trash2, Check, X, ExternalLink } from "lucide-react";
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Düzenleme Modu İçin State'ler
+  const [editingProduct, setEditingProduct] = useState<any>(null);
 
-  // 🔴 SİLME İŞLEVİ (ÇALIŞIYOR)
-  const handleDelete = (id: number) => {
-    if(confirm("Bu ürünü kalıcı olarak silmek istediğinize emin misiniz?")) {
-      setProducts(products.filter(p => p.id !== id));
+  // Verileri Çek
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch("/api/products");
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(data);
+      }
+    } catch (error) {
+      console.error("Hata:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 🟢 YENİ ÜRÜN EKLEME (ÇALIŞIYOR)
-  const handleAddProduct = () => {
-    const name = prompt("Ürün Adı:");
-    if (!name) return; // İptal edilirse dur
-    
-    const priceStr = prompt("Fiyat (₺):", "100");
-    const price = parseFloat(priceStr || "0");
-    
-    const stockStr = prompt("Stok Adedi:", "10");
-    const stock = parseInt(stockStr || "0");
+  useEffect(() => { fetchProducts(); }, []);
 
-    const category = prompt("Kategori:", "Genel");
+  // HIZLI GÜNCELLEME (Aktif/Pasif)
+  const toggleStatus = async (id: string, currentStatus: boolean) => {
+    // 1. Önce ekranı güncelle (Donmayı engeller, hız hissi verir)
+    const newStatus = !currentStatus;
+    setProducts(products.map(p => p.id === id ? { ...p, isActive: newStatus } : p));
 
-    const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-    
-    const newProduct = {
-      id: newId,
-      name: name,
-      price: price,
-      stock: stock,
-      category: category || "Genel"
-    };
-
-    setProducts([newProduct, ...products]);
+    // 2. Arka planda kaydet
+    try {
+      await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isActive: newStatus }),
+      });
+    } catch (error) {
+      alert("Güncelleme başarısız oldu!");
+      fetchProducts(); // Hata olursa eski haline döndür
+    }
   };
 
-  // 🔵 DÜZENLEME İŞLEVİ (ÇALIŞIYOR)
-  const handleEdit = (id: number) => {
-    const product = products.find(p => p.id === id);
-    if (!product) return;
-
-    const newName = prompt("Ürün adını düzenle:", product.name);
-    if (newName === null) return; // İptal
-
-    const newPriceStr = prompt("Fiyatı düzenle:", product.price.toString());
-    const newStockStr = prompt("Stok adedini düzenle:", product.stock.toString());
-
-    setProducts(products.map(p => {
-        if (p.id === id) {
-            return {
-                ...p,
-                name: newName,
-                price: parseFloat(newPriceStr || "0"),
-                stock: parseInt(newStockStr || "0")
-            };
-        }
-        return p;
-    }));
+  // ÜRÜN SİLME
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bu ürünü silmek istediğine emin misin?")) return;
+    setProducts(products.filter(p => p.id !== id)); // Listeden hemen sil
+    await fetch("/api/products", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
   };
+
+  // ÜRÜN GÜNCELLEME (Form Gönderimi)
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+
+    // Listeyi güncelle
+    setProducts(products.map(p => p.id === editingProduct.id ? editingProduct : p));
+    
+    // Veritabanına yaz
+    await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingProduct),
+    });
+
+    setEditingProduct(null); // Modalı kapat
+  };
+
+  // Arama Filtresi
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) return <div className="p-10 text-center">Yükleniyor...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
-      {/* Sol Menü */}
-      <aside className="w-64 bg-slate-900 text-white flex-shrink-0 hidden md:block">
-        <div className="p-6 text-2xl font-bold border-b border-slate-700">
-          Yönetim<span className="text-blue-500">Paneli</span>
+    <div className="p-6 max-w-7xl mx-auto min-h-screen bg-gray-50">
+      
+      {/* BAŞLIK VE ARAMA */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-2">
+          <Package className="text-blue-600" /> Ürün Yönetimi
+        </h1>
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+          <input 
+            type="text" 
+            placeholder="Ürün Ara..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          />
         </div>
-        <nav className="p-4 space-y-2">
-          <Link href="/admin" className="block px-4 py-3 hover:bg-slate-800 rounded-lg transition-colors text-gray-300">Panel Özeti</Link>
-          <Link href="/admin/products" className="block px-4 py-3 bg-blue-600 rounded-lg text-white">Ürün Yönetimi</Link>
-          <Link href="/admin/orders" className="block px-4 py-3 hover:bg-slate-800 rounded-lg transition-colors text-gray-300">Siparişler</Link>
-          <Link href="/" className="block px-4 py-3 mt-8 border-t border-slate-700 hover:bg-slate-800 rounded-lg text-gray-400">← Siteye Dön</Link>
-        </nav>
-      </aside>
+      </div>
 
-      {/* Ana İçerik */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        <header className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Ürün Yönetimi</h1>
-            <p className="text-gray-500">Stoktaki ürünleri düzenle veya yeni ürün ekle.</p>
+      {/* ÜRÜN LİSTESİ */}
+      <div className="grid gap-4">
+        {filteredProducts.map((product) => (
+          <div key={product.id} className={`bg-white p-4 rounded-lg shadow border-l-4 ${product.isActive ? 'border-green-500' : 'border-red-500'} flex flex-col md:flex-row items-center justify-between gap-4`}>
+            
+            {/* Ürün Bilgisi */}
+            <div className="flex-1">
+              <h3 className="font-bold text-lg">{product.name}</h3>
+              <p className="text-sm text-gray-500">{product.category || "Kategori Yok"} | Stok: {product.stock}</p>
+              <div className="text-blue-600 font-bold mt-1">{product.price} ₺</div>
+              {product.link && (
+                 <a href={product.link} target="_blank" className="text-xs text-blue-500 flex items-center gap-1 mt-1 hover:underline">
+                    <ExternalLink size={12}/> Tedarikçi Linki
+                 </a>
+              )}
+            </div>
+
+            {/* Aksiyon Butonları */}
+            <div className="flex items-center gap-3">
+              
+              {/* Aktif/Pasif Butonu */}
+              <button 
+                onClick={() => toggleStatus(product.id, product.isActive)}
+                className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${product.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+              >
+                {product.isActive ? <Check size={14}/> : <X size={14}/>}
+                {product.isActive ? "Aktif" : "Pasif"}
+              </button>
+
+              {/* Düzenle Butonu */}
+              <button 
+                onClick={() => setEditingProduct(product)}
+                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+              >
+                <Edit size={20} />
+              </button>
+
+              {/* Sil Butonu */}
+              <button 
+                onClick={() => handleDelete(product.id)}
+                className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition"
+              >
+                <Trash2 size={20} />
+              </button>
+            </div>
           </div>
-          <button onClick={handleAddProduct} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors shadow-sm active:scale-95 transform">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Yeni Ürün Ekle
-          </button>
-        </header>
+        ))}
+      </div>
 
-        {/* Ürün Tablosu */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200">
-              <tr>
-                <th className="p-4">Ürün Adı</th>
-                <th className="p-4">Kategori</th>
-                <th className="p-4">Fiyat</th>
-                <th className="p-4">Stok</th>
-                <th className="p-4 text-right">İşlemler</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {products.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4 font-medium text-gray-800">{p.name}</td>
-                  <td className="p-4 text-gray-500"><span className="px-2 py-1 bg-gray-100 rounded text-xs border border-gray-200">{p.category}</span></td>
-                  <td className="p-4 font-bold text-slate-700">{p.price.toFixed(2)} ₺</td>
-                  <td className="p-4">
-                    {p.stock < 20 ? <span className="text-red-600 font-bold">{p.stock} Adet (Kritik)</span> : <span className="text-green-600">{p.stock} Adet</span>}
-                  </td>
-                  <td className="p-4 text-right space-x-2">
-                    <button onClick={() => handleEdit(p.id)} className="text-blue-600 hover:text-blue-800 font-medium px-2 py-1 hover:bg-blue-50 rounded">Düzenle</button>
-                    <button onClick={() => handleDelete(p.id)} className="text-red-600 hover:text-red-800 font-medium px-2 py-1 hover:bg-red-50 rounded">Sil</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* DÜZENLEME MODALI (POP-UP) */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-2xl">
+            <h2 className="text-xl font-bold mb-4">Ürünü Düzenle</h2>
+            <form onSubmit={handleUpdate} className="space-y-3">
+              
+              <div>
+                <label className="text-xs font-bold text-gray-500">Ürün Adı</label>
+                <input 
+                  className="w-full border p-2 rounded" 
+                  value={editingProduct.name} 
+                  onChange={(e) => setEditingProduct({...editingProduct, name: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-bold text-gray-500">Fiyat</label>
+                  <input type="number" className="w-full border p-2 rounded" 
+                    value={editingProduct.price} 
+                    onChange={(e) => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-500">Stok</label>
+                  <input type="number" className="w-full border p-2 rounded" 
+                    value={editingProduct.stock} 
+                    onChange={(e) => setEditingProduct({...editingProduct, stock: parseInt(e.target.value)})}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500">Resim URL</label>
+                <input className="w-full border p-2 rounded" 
+                  value={editingProduct.image || ""} 
+                  placeholder="https://..."
+                  onChange={(e) => setEditingProduct({...editingProduct, image: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-500">Tedarikçi Linki</label>
+                <input className="w-full border p-2 rounded" 
+                  value={editingProduct.link || ""} 
+                  placeholder="Link yapıştır..."
+                  onChange={(e) => setEditingProduct({...editingProduct, link: e.target.value})}
+                />
+              </div>
+
+              <div className="flex gap-2 mt-4 pt-2 border-t">
+                <button type="button" onClick={() => setEditingProduct(null)} className="flex-1 bg-gray-200 p-2 rounded hover:bg-gray-300">İptal</button>
+                <button type="submit" className="flex-1 bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Kaydet</button>
+              </div>
+            </form>
+          </div>
         </div>
-      </main>
+      )}
+
     </div>
   );
 }
