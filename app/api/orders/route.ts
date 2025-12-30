@@ -23,29 +23,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
     }
 
-    // 3. Siparişi Veritabanına Kaydet (YENİ YAPINIZ)
-    // Artık items'ı string olarak değil, ilişkisel tablo verisi olarak ekliyoruz.
+    // 3. Siparişi Kaydet (İLİŞKİSEL YÖNTEM)
     const order = await prisma.order.create({
       data: {
         userId: user.id,
         total: parseFloat(total),
         status: "Bekleniyor (WP)", 
-        // DÜZELTME BURADA: items tablosuna veri ekliyoruz
         items: {
           create: items.map((item: any) => ({
-            productId: item.id, // Ürün ID'si
-            quantity: item.quantity, // Adet
-            price: parseFloat(item.price) // Fiyat
+            productId: item.id, // BURASI KRİTİK: Frontend'den 'id' gelmezse hata verir
+            quantity: item.quantity,
+            price: parseFloat(item.price)
           }))
         }
       }
     });
 
-    // Başarılı, sipariş numarasını ön yüze gönder
     return NextResponse.json({ success: true, orderId: order.id });
 
   } catch (error: any) {
-    console.error("Sipariş Hatası:", error);
+    console.error("Sipariş Hatası Detayı:", error);
     return NextResponse.json({ error: "Sipariş alınamadı: " + error.message }, { status: 500 });
   }
 }
