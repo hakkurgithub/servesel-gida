@@ -11,7 +11,7 @@ export default function MenuPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [addedProductId, setAddedProductId] = useState<string | null>(null);
   
-  // TAM EKRAN MODU İÇİN (LIGHTBOX)
+  // TAM EKRAN MODU
   const [selectedProductImages, setSelectedProductImages] = useState<string[] | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -53,7 +53,6 @@ export default function MenuPage() {
     window.open(shareUrl, "_blank");
   };
 
-  // Resme Tıklayınca Aç
   const openLightbox = (product: any) => {
     const allImages = [];
     if (product.image) allImages.push(product.image);
@@ -65,20 +64,14 @@ export default function MenuPage() {
     }
   };
 
-  // Sonraki Resim
   const nextImage = (e: any) => {
     e.stopPropagation();
-    if (selectedProductImages) {
-        setCurrentImageIndex((prev) => (prev + 1) % selectedProductImages.length);
-    }
+    if (selectedProductImages) setCurrentImageIndex((prev) => (prev + 1) % selectedProductImages.length);
   };
 
-  // Önceki Resim
   const prevImage = (e: any) => {
     e.stopPropagation();
-    if (selectedProductImages) {
-        setCurrentImageIndex((prev) => (prev - 1 + selectedProductImages.length) % selectedProductImages.length);
-    }
+    if (selectedProductImages) setCurrentImageIndex((prev) => (prev - 1 + selectedProductImages.length) % selectedProductImages.length);
   };
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -87,7 +80,6 @@ export default function MenuPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Üst Bar */}
       <div className="bg-white shadow-sm sticky top-0 z-20">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
             <h1 className="text-2xl font-bold text-slate-800">Toptan Ürünlerimiz</h1>
@@ -109,24 +101,15 @@ export default function MenuPage() {
             {filteredProducts.map((product) => (
                 <div key={product.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-all flex flex-col">
                 
-                {/* RESİM ALANI (TIKLANABİLİR) */}
-                <div 
-                    className="h-56 w-full bg-gray-100 relative overflow-hidden cursor-zoom-in group"
-                    onClick={() => openLightbox(product)}
-                >
+                <div className="h-56 w-full bg-gray-100 relative overflow-hidden cursor-zoom-in group" onClick={() => openLightbox(product)}>
                     {product.image ? (
                         <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">Resim Yok</div>
                     )}
-                    
-                    {/* Çoklu resim varsa ikon göster */}
                     {product.images && product.images.length > 0 && (
-                        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                            +{product.images.length} Foto
-                        </div>
+                        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">+{product.images.length} Foto</div>
                     )}
-                    
                     <div className="absolute top-3 right-3 bg-white/90 text-slate-800 text-sm font-bold px-3 py-1 rounded-full shadow-sm">{product.price} ₺</div>
                 </div>
 
@@ -152,28 +135,16 @@ export default function MenuPage() {
         )}
       </div>
 
-      {/* TAM EKRAN RESİM GÖSTERİCİ (LIGHTBOX) */}
       {selectedProductImages && (
         <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setSelectedProductImages(null)}>
             <button className="absolute top-4 right-4 text-white p-2 hover:bg-white/20 rounded-full transition"><X size={32}/></button>
-            
             <div className="relative max-w-4xl max-h-screen w-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                <img 
-                    src={selectedProductImages[currentImageIndex]} 
-                    className="max-h-[85vh] max-w-full rounded-lg shadow-2xl object-contain" 
-                    alt="Tam Ekran"
-                />
-                
-                {/* Ok Tuşları (Birden fazla resim varsa) */}
+                <img src={selectedProductImages[currentImageIndex]} className="max-h-[85vh] max-w-full rounded-lg shadow-2xl object-contain" alt="Tam Ekran"/>
                 {selectedProductImages.length > 1 && (
                     <>
                         <button onClick={prevImage} className="absolute left-2 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition"><ChevronLeft size={24}/></button>
                         <button onClick={nextImage} className="absolute right-2 bg-black/50 text-white p-3 rounded-full hover:bg-black/70 transition"><ChevronRight size={24}/></button>
-                        
-                        {/* Sayfa Göstergesi */}
-                        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1 rounded-full">
-                            {currentImageIndex + 1} / {selectedProductImages.length}
-                        </div>
+                        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-white text-sm bg-black/50 px-3 py-1 rounded-full">{currentImageIndex + 1} / {selectedProductImages.length}</div>
                     </>
                 )}
             </div>
