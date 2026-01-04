@@ -1,166 +1,87 @@
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 async function main() {
-  // Admin kullanıcı
-  const adminPassword = await bcrypt.hash("123456", 10);
-  await prisma.user.upsert({
-    where: { email: "admin@example.com" },
+  console.log('🌱 Tohumlama (Seeding) başlıyor...')
+
+  // 1. Önce bir Admin (Satıcı) Oluştur (Yoksa hata verir çünkü ürünün sahibi olması lazım)
+  // E-posta adresini ve şifreyi değiştirebilirsin
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@servesel.com' },
     update: {},
     create: {
-      email: "admin@example.com",
-      password: adminPassword,
-      role: "ADMIN",
-      company: "Admin Şirketi",
-      taxNo: "1234567890",
-      address: "Admin Adresi",
-      phone: "05555555555",
+      email: 'admin@servesel.com',
+      name: 'Servesel Admin',
+      password: 'admin', // Gerçekte hashlenmeli ama test için böyle kalsın
+      role: 'ADMIN',
+      company: 'Servesel Merkez',
+      phone: '05555555555',
+      isApproved: true,
     },
-  });
+  })
 
-  // Kategoriler
-  const categories = [
-    { name: "Yağlar", slug: "yaglar" },
-    { name: "Salçalar", slug: "salcalar" },
-    { name: "Süt Ürünleri", slug: "sut-urunleri" },
-  ];
-  for (const cat of categories) {
-    await prisma.category.upsert({
-      where: { slug: cat.slug },
-      update: {},
-      create: cat,
-    });
-  }
+  console.log(`👤 Admin kullanıcısı hazır: ${admin.id}`)
 
-  // Ürünler
+  // 2. Örnek Ürün Verileri (Yeni Şemaya Uygun)
   const products = [
     {
-      name: "Ayçiçek Yağı 5L",
-      slug: "aycicek-yagi-5l",
-      description: "Kaliteli ayçiçek yağı.",
-      price: 250,
-      stock: 100,
-      image: "/aydin-zeytinyagi-5lt.jpg",
-      categoryId: 1,
-      sellerId: 1,
-      public: true,
-    },
-    {
-      name: "Zeytinyağı 10L",
-      slug: "zeytinyagi-10l",
-      description: "Doğal zeytinyağı.",
-      price: 600,
+      name: 'Aydın Zeytinyağı 5 Lt Teneke',
+      slug: 'aydin-zeytinyagi-5-lt-teneke',
+      description: 'Doğal sızma, asitsiz zeytinyağı.',
+      price: 2150,
       stock: 50,
-      image: "/aydin-zeytinyagi-10lt.jpg",
-      categoryId: 1,
-      sellerId: 1,
-      public: true,
+      image: 'https://placehold.co/600x400/png?text=Zeytinyagi',
+      images: [],
+      category: 'Gıda',
+      isActive: true,
+      sellerId: admin.id, // <-- ARTIK NUMBER DEĞİL, STRING ID
     },
     {
-      name: "Domates Salçası 20kg",
-      slug: "domates-salcasi-20kg",
-      description: "Ev yapımı domates salçası.",
-      price: 900,
-      stock: 30,
-      image: "/domates-salcasi-20kg.jpg",
-      categoryId: 2,
-      sellerId: 1,
-      public: true,
+      name: 'Domates Salçası 19 Lt Kova',
+      slug: 'domates-salcasi-19-lt-kova',
+      description: 'Güneşte kurutulmuş, katkısız salça.',
+      price: 2000,
+      stock: 100,
+      image: 'https://placehold.co/600x400/png?text=Salca',
+      images: [],
+      category: 'Gıda',
+      isActive: true,
+      sellerId: admin.id,
     },
     {
-      name: "Biber Salçası 20kg",
-      slug: "biber-salcasi-20kg",
-      description: "Doğal biber salçası.",
-      price: 950,
-      stock: 25,
-      image: "/biber-salcasi-20kg.jpg",
-      categoryId: 2,
-      sellerId: 1,
-      public: true,
-    },
-    {
-      name: "Rize Tereyağı",
-      slug: "rize-tereyagi",
-      description: "Hakiki Rize tereyağı.",
-      price: 400,
-      stock: 40,
-      image: "/rize-tereyegi.jpg",
-      categoryId: 3,
-      sellerId: 1,
-      public: true,
-    },
-    {
-      name: "Hatay Zeytinyağı 5L",
-      slug: "hatay-zeytinyagi-5l",
-      description: "Hatay bölgesinden zeytinyağı.",
-      price: 550,
-      stock: 60,
-      image: "/hatay-zeytinyagi-5-litre.jpg",
-      categoryId: 1,
-      sellerId: 1,
-      public: true,
-    },
-    {
-      name: "Sesa 1L Ayçiçek Yağı",
-      slug: "sesa-1l-aycicek-yagi",
-      description: "Sesa marka ayçiçek yağı.",
-      price: 60,
-      stock: 200,
-      image: "/sesa-1-litre.jpg",
-      categoryId: 1,
-      sellerId: 1,
-      public: true,
-    },
-    {
-      name: "Sesa 17L Teneke Yağ",
-      slug: "sesa-17l-teneke-yag",
-      description: "Büyük boy teneke yağ.",
-      price: 1200,
-      stock: 10,
-      image: "/sesa-17-litre-teneke.jpg",
-      categoryId: 1,
-      sellerId: 1,
-      public: true,
-    },
-    {
-      name: "Sesa Mısır Yağı",
-      slug: "sesa-misir-yagi",
-      description: "Sesa marka mısır yağı.",
-      price: 80,
-      stock: 150,
-      image: "/sesa-misir-yagi.jpg",
-      categoryId: 1,
-      sellerId: 1,
-      public: true,
-    },
-    {
-      name: "Sigla Yağı",
-      slug: "sigla-yagi",
-      description: "Doğal sigla yağı.",
-      price: 300,
+      name: 'Purnell Safran',
+      slug: 'purnell-safran',
+      description: 'Orijinal safran.',
+      price: 2850,
       stock: 20,
-      image: "/sigla-yagi.jpg",
-      categoryId: 1,
-      sellerId: 1,
-      public: true,
+      image: 'https://placehold.co/600x400/png?text=Safran',
+      images: [],
+      category: 'Baharat',
+      isActive: true,
+      sellerId: admin.id,
     },
-  ];
-  for (const prod of products) {
+  ]
+
+  // 3. Ürünleri Veritabanına Yaz
+  for (const p of products) {
     await prisma.product.upsert({
-      where: { slug: prod.slug },
+      where: { slug: p.slug },
       update: {},
-      create: prod,
-    });
+      create: p,
+    })
   }
+
+  console.log(`✅ ${products.length} adet ürün eklendi.`)
+  console.log('🚀 Tohumlama tamamlandı.')
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
+  .then(async () => {
+    await prisma.$disconnect()
   })
-  .finally(() => {
-    prisma.$disconnect();
-  });
+  .catch(async (e) => {
+    console.error(e)
+    await prisma.$disconnect()
+    process.exit(1)
+  })
